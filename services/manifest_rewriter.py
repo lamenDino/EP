@@ -74,6 +74,7 @@ class ManifestRewriter:
         clearkey_param: str = None,
         api_password: str = None,
         bypass_warp: bool = False,
+        bypass_proxies: bool = False,
         disable_ssl: bool = False,
     ) -> str:
         """Riscrive i manifest MPD (DASH) per passare attraverso il proxy."""
@@ -109,6 +110,8 @@ class ManifestRewriter:
             
             if bypass_warp:
                 header_params += "&warp=off"
+            if bypass_proxies:
+                header_params += "&proxy=off"
 
             if disable_ssl:
                 header_params += "&disable_ssl=1"
@@ -255,6 +258,7 @@ class ManifestRewriter:
         no_bypass: bool = False,
         shorten_url_func=None,
         bypass_warp: bool = False,
+        bypass_proxies: bool = False,
         disable_ssl: bool = False,
         selected_proxy: str = None,
         force_direct: bool = False,
@@ -314,6 +318,8 @@ class ManifestRewriter:
             
             if bypass_warp:
                 header_params += "&warp=off"
+            if bypass_proxies:
+                header_params += "&proxy=off"
             
             if disable_ssl:
                 header_params += "&disable_ssl=1"
@@ -452,6 +458,8 @@ class ManifestRewriter:
         
         if bypass_warp:
             header_params += "&warp=off"
+        if bypass_proxies:
+            header_params += "&proxy=off"
         
         if disable_ssl:
             header_params += "&disable_ssl=1"
@@ -517,6 +525,8 @@ class ManifestRewriter:
                         proxy_key_url += f"&api_password={api_password}"
                     if bypass_warp:
                         proxy_key_url += "&warp=off"
+                    if bypass_proxies:
+                        proxy_key_url += "&proxy=off"
                     if disable_ssl:
                         proxy_key_url += "&disable_ssl=1"
                     if selected_proxy:
@@ -607,6 +617,8 @@ class ManifestRewriter:
                         proxy_key_url += f"&api_password={api_password}"
                     if bypass_warp:
                         proxy_key_url += "&warp=off"
+                    if bypass_proxies:
+                        proxy_key_url += "&proxy=off"
                     if disable_ssl:
                         proxy_key_url += "&disable_ssl=1"
 

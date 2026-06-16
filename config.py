@@ -10,6 +10,8 @@ import urllib.request
 from dotenv import load_dotenv
 from config_store import get as _cfg_get, set as _cfg_set, get_all as _cfg_get_all
 
+APP_VERSION = "2.9.16"
+
 _proxy_source_cache: dict[str, tuple[float, list]] = {}
 _PROXY_SOURCE_TTL = 600
 
@@ -782,17 +784,8 @@ def get_ssl_setting_for_url(url: str, transport_routes: list = None) -> bool:
 
     return False
 
-
-
 API_PASSWORD = os.environ.get("API_PASSWORD")
 PORT = int(os.environ.get("PORT", 7860))
-
-# --- Version/Mode Configuration ---
-APP_VERSION = "2.9.15"
-
-_has_solvers = os.path.exists("flaresolverr")
-VERSION_MODE = "Full" if _has_solvers else "Light"
-
 
 def check_password(request):
     """Verifica la password API se impostata."""

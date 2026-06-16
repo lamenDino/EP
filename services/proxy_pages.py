@@ -3,7 +3,7 @@ import json
 import urllib.parse
 import services.proxy_shared as _shared
 from services.proxy_shared import (
-    logger, web, APP_VERSION, VERSION_MODE,
+    logger, web, APP_VERSION,
     check_password, get_client_ip, PlaylistBuilder, ClientSession, ClientTimeout,
     TCPConnector, ProxyConnector, get_connector_for_proxy, API_PASSWORD,
 )
@@ -96,7 +96,6 @@ class HLSProxyPagesMixin:
             is_outdated = self.latest_version not in ["Checking...", "Unknown", "Error", APP_VERSION]
             version_status_class = "outdated" if is_outdated else ""
 
-            html_content = html_content.replace("{{VERSION_MODE}}", VERSION_MODE)
             html_content = html_content.replace("{{APP_VERSION}}", APP_VERSION)
             html_content = html_content.replace("{{LATEST_VERSION}}", self.latest_version)
             html_content = html_content.replace("{{VERSION_STATUS_CLASS}}", version_status_class)
@@ -189,7 +188,6 @@ class HLSProxyPagesMixin:
             is_outdated = self.latest_version not in ["Checking...", "Unknown", "Error", APP_VERSION]
             version_status_class = "outdated" if is_outdated else ""
 
-            html_content = html_content.replace("{{VERSION_MODE}}", VERSION_MODE)
             html_content = html_content.replace("{{APP_VERSION}}", APP_VERSION)
             html_content = html_content.replace("{{LATEST_VERSION}}", self.latest_version)
             html_content = html_content.replace("{{VERSION_STATUS_CLASS}}", version_status_class)
@@ -230,7 +228,7 @@ class HLSProxyPagesMixin:
         info = {
             "proxy": "EasyProxy",
             "version": APP_VERSION,  # Aggiornata per supporto AES-128
-            "mode": VERSION_MODE,
+
             "status": "✅ Running",
             "features": [
                 "✅ Proxy HLS streams",
@@ -667,7 +665,6 @@ class HLSProxyPagesMixin:
         config = config_store.get_all()
         config["api_password_configured"] = bool(API_PASSWORD)
         config["app_version"] = APP_VERSION
-        config["version_mode"] = VERSION_MODE
         config["warp_status"] = await self.get_warp_status()
         config["warp_ip"] = getattr(self, '_warp_ip', '')
         config["available_extractors"] = self._get_available_extractors()
