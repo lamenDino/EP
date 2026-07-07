@@ -63,11 +63,14 @@ class FFmpegManager:
                     finally:
                         playlist_ready.set()
 
-                asyncio.create_task(_wait_for_playlist())
+                wait_task = asyncio.create_task(_wait_for_playlist())
                 try:
                     await asyncio.wait_for(playlist_ready.wait(), timeout=10)
                 except asyncio.TimeoutError:
                     playlist_ready.set()
+                finally:
+                    if not wait_task.done():
+                        wait_task.cancel()
 
                 if os.path.exists(playlist_path):
                     return f"{stream_id}/index.m3u8"
@@ -212,11 +215,14 @@ class FFmpegManager:
                         await asyncio.sleep(0.1)
                     playlist_ready.set()  # timeout
 
-                asyncio.create_task(_wait_for_playlist())
+                wait_task = asyncio.create_task(_wait_for_playlist())
                 try:
                     await asyncio.wait_for(playlist_ready.wait(), timeout=30)
                 except asyncio.TimeoutError:
                     playlist_ready.set()
+                finally:
+                    if not wait_task.done():
+                        wait_task.cancel()
             finally:
                 log_file.close()
 

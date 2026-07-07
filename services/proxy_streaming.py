@@ -181,7 +181,9 @@ class HLSProxyStreamingMixin:
             end = total - 1 if i == K - 1 else (start + chunk - 1)
             ranges.append((start, end))
 
-        async def _fetch_part(start, end):
+        data = bytearray(total)
+
+        async def _fetch_part_into(start, end):
             h = {**base_headers, "Range": f"bytes={start}-{end}"}
             s, s_proxy = await self._get_proxy_session(
                 segment_url, bypass_warp=bypass_warp, forced_proxy=forced_proxy
@@ -194,31 +196,30 @@ class HLSProxyStreamingMixin:
                     timeout=ClientTimeout(total=60, connect=10, sock_connect=10, sock_read=60),
                 ) as r:
                     r.raise_for_status()
-                    return await r.read()
+                    chunk = await r.read()
+                    data[start:start + len(chunk)] = chunk
             finally:
                 if s_proxy:
                     await s.close()
 
         try:
-            parts = await asyncio.gather(*[_fetch_part(s, e) for s, e in ranges])
+            await asyncio.gather(*[_fetch_part_into(s, e) for s, e in ranges])
         except Exception as e:
             raise _ParallelFallback(f"parallel fetch error: {e}")
 
-        data = b"".join(parts)
         if len(data) != total:
             raise _ParallelFallback(f"size mismatch {len(data)} != {total}")
 
         # 3) Stream the assembled segment to the client.
         response_headers = {}
         set_response_header(response_headers, "Content-Type", "video/mp2t")
-        set_response_header(response_headers, "Content-Length", str(total))
         set_response_header(response_headers, "Content-Disposition", f'attachment; filename="{segment_name}"')
         set_response_header(response_headers, "Access-Control-Allow-Origin", "*")
         set_response_header(response_headers, "Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
         set_response_header(response_headers, "Access-Control-Allow-Headers", "Range, Content-Type")
         response = web.StreamResponse(status=200, headers=response_headers)
         await response.prepare(request)
-        await response.write(data)
+        await response.write(bytes(data))
         await response.write_eof()
         logger.info(f"⚡ Parallel fetch {segment_name}: {total} bytes via {K} ranges")
         return response
@@ -1296,7 +1297,7 @@ class HLSProxyStreamingMixin:
                 "pipe:0",
                 "-c",
                 "copy",
-                "-copyts",  # Preserve timestamps to prevent freezing/gap issues
+                "-copyts",
                 "-f",
                 "mpegts",
                 "pipe:1",
@@ -1310,17 +1311,30 @@ class HLSProxyStreamingMixin:
             )
 
             try:
-                stdout, stderr = await proc.communicate(input=content)
-            finally:
-                # ponytail: prevent ffmpeg and pipe FD leaks if cancelled or failed
+                proc.stdin.write(content)
+                await proc.stdin.drain()
+                proc.stdin.close()
+
+                chunks = []
+                while True:
+                    chunk = await proc.stdout.read(65536)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+
+                stderr = await proc.stderr.read()
+                stdout = b"".join(chunks)
+
+                await proc.wait()
+            except Exception:
                 if proc.returncode is None:
                     try:
                         proc.kill()
                         await proc.wait()
                     except Exception:
                         pass
+                raise
 
-            # Check for data presence regardless of return code (workaround for asyncio race condition on some platforms)
             if len(stdout) > 0:
                 if proc.returncode != 0:
                     logger.debug(
